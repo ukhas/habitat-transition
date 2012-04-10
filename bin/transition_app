@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+
+import sys
+import os.path
+
+root = os.path.realpath(os.path.join(__file__, "../../"))
+
+try:
+    import habitat
+except ImportError:
+    # Assumes habitat and habitat_extensions have been cloned in the same parent
+    # directory
+
+    sys.path.append(os.path.join(os.path.dirname(root), "habitat"))
+    import habitat
+
+try:
+    import habitat_extensions
+except ImportError:
+    sys.path.append(root)
+
+from habitat_extensions.transition.app import app
+app.run()

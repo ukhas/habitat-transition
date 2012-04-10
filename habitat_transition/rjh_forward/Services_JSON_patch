@@ -1,0 +1,15 @@
+--- JSON.php    2006-06-28 06:54:17.000000000 +0100
++++ JSON.new.php    2011-08-12 23:10:22.978359861 +0100
+@@ -374,6 +374,11 @@
+                 * bracket notation.
+                 */
+ 
++                if (count($var) == 0)
++                {
++                    return '{}';
++                }
++
+                 // treat as a JSON object
+                 if (is_array($var) && count($var) && (array_keys($var) !== range(0, sizeof($var) - 1))) {
+                     $properties = array_map(array($this, 'name_value'),
+
