@@ -158,6 +158,8 @@ class PayloadXML(object):
         f_delimiter.text = ","
         callsign = ET.SubElement(self.sentence, 'callsign')
         callsign.text = str(self.callsign)
+        string_limit = ET.SubElement(self.sentence, 'string_limit')
+        string_limit.text = "999"
         fields = ET.SubElement(self.sentence, 'fields')
         fields.text = str(len(self.payload["sentence"]["fields"]) + 1)
 
