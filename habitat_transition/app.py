@@ -161,6 +161,9 @@ def set_expires(response, diff):
 def listener_filter(item):
     (callsign, data) = item
 
+    if not callsign:
+        return False
+
     if "chase" in callsign:
         return False
 
