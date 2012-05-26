@@ -106,6 +106,10 @@ class SpaceNearUs:
             logger.warning("ignoring doc where data is not a dict")
             return
 
+        if "gps_lock" in data and not data["gps_lock"]:
+            logger.warning("not uploading due to data[\"gps_lock\"]")
+            return
+
         with self.recent_lock:
             doc_id = doc["_id"]
             if doc_id in self.recent_doc_receivers:
