@@ -149,6 +149,7 @@ class SpaceNearUs:
             if not key.startswith("_"):
                 unused_data[key] = data[key]
 
+        unused_data = self._all_floats_to_str(unused_data)
         params["data"] = json.dumps(unused_data)
 
         params["pass"] = "aurora"
@@ -230,3 +231,22 @@ class SpaceNearUs:
         qs = urlencode(params, True)
         logger.debug("encoded data: " + qs)
         u = urlopen(self.tracker.format(qs))
+
+    def _all_floats_to_str(self, obj):
+        if isinstance(obj, dict) or isinstance(obj, list):
+            # Modify object in place then return it
+
+            if isinstance(obj, dict):
+                kg = obj
+            else:
+                kg = xrange(len(obj))
+
+            for key in kg:
+                obj[key] = self._all_floats_to_str(obj[key])
+
+        elif isinstance(obj, float):
+            # Convert and return new str. str(float) produces a 12sf float.
+
+            obj = str(obj)
+
+        return obj
