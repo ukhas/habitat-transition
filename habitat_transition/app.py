@@ -46,6 +46,9 @@ def hello():
     <html>
     <body>
 
+    <h3>payloads list</h3>
+    <p><a href="allpayloads">JSON</a></p>
+
     <h3>receivers list</h3>
     <p><a href="receivers">JSON</a></p>
 
