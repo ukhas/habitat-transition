@@ -174,8 +174,8 @@ class PayloadXML(object):
             else:
                 data_format = None
             self._add_field(seq=seq, dbfield=field["name"], minsize=0,
-                maxsize=999, datatype=self.type_map[field["sensor"]],
-                format=data_format)
+                datatype=self.type_map.get(field["sensor"], "char"),
+                maxsize=999, format=data_format)
             seq += 1
 
     def _add_field(self, **kwargs):
