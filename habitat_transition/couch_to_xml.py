@@ -93,7 +93,8 @@ class PayloadXML(object):
         self.tree = ET.Element("payload")
 
         name = ET.SubElement(self.tree, 'name')
-        name.text = str(self.callsign)
+        # old dl-fldigi can't handle / in drop down list items
+        name.text = str(self.callsign.replace("/", "_"))
 
         self.transmission = ET.SubElement(self.tree, 'transmission')
         self._add_basic()
