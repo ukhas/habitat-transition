@@ -134,12 +134,7 @@ class SpaceNearUs:
         params = {}
 
         self._copy_fields(fields, data, params)
-
-        try:
-            timestr = "{hour:02d}{minute:02d}{second:02d}"
-            params["time"] = timestr.format(**data["time"])
-        except KeyError:
-            pass
+        self._handle_time(data, params)
 
         unused_data = {}
         used_keys = set(fields.values() + ["time"])
@@ -190,12 +185,7 @@ class SpaceNearUs:
         params = {}
 
         self._copy_fields(fields, data, params)
-
-        try:
-            timestr = "{hour:02d}{minute:02d}{second:02d}"
-            params["time"] = timestr.format(**data["time"])
-        except KeyError:
-            pass
+        self._handle_time(data, params)
 
         params["pass"] = "aurora"
         self.upload_queue.put(params)
@@ -226,6 +216,16 @@ class SpaceNearUs:
                 params[tgt] = data[src]
             except KeyError:
                 continue
+
+    def _handle_time(self, data, params):
+        try:
+            if isinstance(data["time"], dict):
+                timestr = "{hour:02d}{minute:02d}{second:02d}"
+                params["time"] = timestr.format(**data["time"])
+            else:
+                params["time"] = data["time"].replace(":", "")
+        except KeyError:
+            pass
 
     def _post_to_track(self, params):
         qs = urlencode(params, True)
