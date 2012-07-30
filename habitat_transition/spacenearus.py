@@ -30,7 +30,7 @@ import copy
 import json
 
 __all__ = ["SpaceNearUs"]
-logger = logging.getLogger("habitat_extensions.transition.spacenearus")
+logger = logging.getLogger("habitat_transition.spacenearus")
 
 class SpaceNearUs:
     """

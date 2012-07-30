@@ -15,9 +15,9 @@ except ImportError:
     import habitat
 
 try:
-    import habitat_extensions
+    import habitat_transition
 except ImportError:
     sys.path.append(root)
 
-from habitat_extensions.transition.app import app
+from habitat_transition.app import app
 app.run()

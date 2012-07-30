@@ -24,17 +24,19 @@ view, then output them as XML documents ready for dl-fldigi.
 import sys
 import couchdbkit
 import subprocess
-import elementtree.ElementTree as ET
+import xml.etree.cElementTree as ET
 import xml.dom.minidom
 
 def main():
     if len(sys.argv) != 3:
-        print "Usage: {0} <couch uri> <couch db>".format(sys.argv[0])
+        print >> sys.stderr, "Usage: {0} <couch uri> <couch db>".format(
+                sys.argv[0])
         sys.exit(0)
     try:
         print dump_xml(sys.argv[1], sys.argv[2])
     except Exception as e:
-        print "Error getting XML, stopping: {0}: {1}".format(type(e), e)
+        print >> sys.stderr, "Error getting XML, stopping: {0}: {1}".format(
+                type(e), e)
 
 def dump_xml(couch_uri, couch_db):
     payloads = get_payloads(couch_uri, couch_db)
@@ -43,9 +45,9 @@ def dump_xml(couch_uri, couch_db):
         try:
             root.add_payload(payload, payloads[payload])
         except Exception as e:
-            print "Error occured processing a payload: {0}: {1}".format(
-                type(e), e)
-            print "Continuing..."
+            print >> sys.stderr, "Error occured processing payload " \
+                "{0}: {1}: {2}".format(payload, type(e), e)
+            print >> sys.stderr, "Continuing..."
             continue
     return str(root)
 
@@ -70,14 +72,14 @@ class PayloadsXML(object):
         self.tree.append(payload.get_xml())
 
     def __str__(self):
-        string = ET.tostring(self.tree, "utf-8")
-        reparsed = xml.dom.minidom.parseString(string)
-        xml_string = reparsed.toxml("utf-8")
         p = subprocess.Popen(("tidy", "-xml", "-indent", "-quiet"),
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        p.stdin.write(xml_string)
+        root = ET.ElementTree(self.tree)
+        root.write(p.stdin, encoding="utf-8", xml_declaration=True)
         p.stdin.close()
-        return p.stdout.read()
+        data = p.stdout.read()
+        p.wait()
+        return data
 
 class PayloadXML(object):
     type_map = {

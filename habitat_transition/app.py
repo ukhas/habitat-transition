@@ -25,6 +25,7 @@ import base64
 import json
 import time
 import couchdbkit
+from werkzeug.contrib.cache import SimpleCache as Cache
 from xml.sax.saxutils import escape as htmlescape
 from habitat import uploader
 from . import couch_to_xml
@@ -33,7 +34,8 @@ from habitat.utils.startup import load_config
 # Monkey patch float precision
 json.encoder.FLOAT_REPR = lambda o: format(o, '.5f')
 
-app = flask.Flask("habitat_extensions.transition.app")
+app = flask.Flask("habitat_transition.app")
+cache = Cache(threshold=10, default_timeout=60)
 
 # Load config here :S ?
 config = load_config()
@@ -149,34 +151,20 @@ def listener_telemetry():
 
 @app.route("/allpayloads")
 def allpayloads():
-    response = flask.make_response(couch_to_xml.dump_xml(**couch_settings))
-    set_expires(response, 10 * 60)
+    text = cache.get('allpayloads')
+    if text is None:
+        text = couch_to_xml.dump_xml(**couch_settings)
+        cache.set('allpayloads', text)
+    response = flask.make_response(text)
+    set_expires(response, 60)
     return response
 
 def set_expires(response, diff):
-    # 10 minute expires:
     expires = time.time() + diff
     expires = time.strftime("%a, %d %b %Y %H:%M:%S +0000",
                             time.gmtime(expires))
 
     response.headers["Expires"] = expires
-
-def listener_filter(item):
-    (callsign, data) = item
-
-    if not callsign:
-        return False
-
-    if "chase" in callsign:
-        return False
-
-    if "telemetry" not in data:
-        return False
-
-    if "info" not in data:
-        return False
-
-    return True
 
 HTML_DESCRIPTION = """
 <font size="-2"><BR>
@@ -186,12 +174,10 @@ HTML_DESCRIPTION = """
 </font>
 """
 
-def listener_map(couch_db, item):
-    (callsign, data) = item
-
+def listener_map(callsign, data):
     try:
-        info = couch_db[data["info"]]["data"]
-        telemetry = couch_db[data["telemetry"]]["data"]
+        info = data["info"]["data"]
+        telemetry = data["telemetry"]["data"]
 
         tdiff = int(time.time()) - data["latest"]
         tdiff_hours = tdiff / 3600
@@ -217,49 +203,71 @@ def listener_map(couch_db, item):
     except KeyError:
         return None
 
-@app.route("/receivers")
-def receivers():
-    couch_server = couchdbkit.Server(couch_settings["couch_uri"])
-    couch_db = couch_server[couch_settings["couch_db"]]
-
+def receivers_load(couch_db):
     listeners = {}
 
     yesterday = int(time.time() - (24 * 60 * 60))
     startkey = [yesterday, None]
     o = {"startkey": startkey}
 
-    info = couch_db.view("habitat/listener_info", **o)
+    for doc_type in ["info", "telemetry"]:
+        view = couch_db.view("habitat/listener_" + doc_type, **o)
 
-    for result in info:
-        (time_uploaded, callsign) = result["key"]
-        doc_id = result["id"]
+        for result in view:
+            (time_uploaded, callsign) = result["key"]
 
-        l = {"info": doc_id, "latest": time_uploaded}
+            l = {doc_type: result["id"], "latest": time_uploaded}
 
-        if callsign not in listeners:
-            listeners[callsign] = l
+            if callsign not in listeners:
+                listeners[callsign] = l
+            else:
+                listeners[callsign].update(l)
+
+    required_ids = {}
+    remove_listeners = []
+    for callsign in listeners:
+        l = listeners[callsign]
+
+        if not callsign or "chase" in callsign \
+                or "info" not in l or "telemetry" not in l:
+            remove_listeners.append(callsign)
         else:
-            listeners[callsign].update(l)
+            required_ids[listeners[callsign]["info"]] = callsign
+            required_ids[listeners[callsign]["telemetry"]] = callsign
 
-    telemetry = couch_db.view("habitat/listener_telemetry", **o)
+    for callsign in remove_listeners:
+        del listeners[callsign]
 
-    for result in telemetry:
-        (time_uploaded, callsign) = result["key"]
+    docs = couch_db.all_docs(keys=required_ids.keys(), include_docs=True)
+
+    for result in docs:
         doc_id = result["id"]
+        doc = result["doc"]
 
-        l = {"telemetry": doc_id, "latest": time_uploaded}
-
-        if callsign not in listeners:
-            listeners[callsign] = l
+        callsign = required_ids[doc_id]
+        if doc["type"] == "listener_info":
+            listeners[callsign]["info"] = doc
+        elif doc["type"] == "listener_telemetry":
+            listeners[callsign]["telemetry"] = doc
         else:
-            listeners[callsign].update(l)
+            raise KeyError("type")
 
-    # Covert dict to list. Filter, map, then remove any that failed the map.
-    listeners = filter(listener_filter, listeners.items())
-    listeners = map(lambda x: listener_map(couch_db, x), listeners)
-    listeners = filter(None, listeners)
+    return listeners
 
-    response = flask.make_response(json.dumps(listeners))
+@app.route("/receivers")
+def receivers():
+    couch_server = couchdbkit.Server(couch_settings["couch_uri"])
+    couch_db = couch_server[couch_settings["couch_db"]]
+
+    listeners = receivers_load(couch_db)
+
+    response_data = []
+    for callsign in listeners:
+        l = listener_map(callsign, listeners[callsign])
+        if l is not None:
+            response_data.append(l)
+
+    response = flask.make_response(json.dumps(response_data))
     set_expires(response, 10 * 60)
     response.headers["Content-type"] = "application/json"
     return response
