@@ -28,6 +28,8 @@ import threading
 import Queue
 import copy
 import json
+import time
+from habitat.utils import rfc3339, immortal_changes
 
 __all__ = ["SpaceNearUs"]
 logger = logging.getLogger("habitat_transition.spacenearus")
@@ -62,7 +64,7 @@ class SpaceNearUs:
 
         update_seq = self.db.info()["update_seq"]
 
-        consumer = couchdbkit.Consumer(self.db)
+        consumer = immortal_changes.Consumer(self.db)
         consumer.wait(self.couch_callback, filter="habitat/spacenear",
                       since=update_seq, heartbeat=1000, include_docs=True)
 
@@ -185,7 +187,7 @@ class SpaceNearUs:
         params = {}
 
         self._copy_fields(fields, data, params)
-        self._handle_time(data, params)
+        self._handle_time(data, params, doc["time_created"])
 
         params["pass"] = "aurora"
         self.upload_queue.put(params)
@@ -217,15 +219,20 @@ class SpaceNearUs:
             except KeyError:
                 continue
 
-    def _handle_time(self, data, params):
-        try:
-            if isinstance(data["time"], dict):
-                timestr = "{hour:02d}{minute:02d}{second:02d}"
-                params["time"] = timestr.format(**data["time"])
-            else:
-                params["time"] = data["time"].replace(":", "")
-        except KeyError:
-            pass
+    def _handle_time(self, data, params, time_created=None):
+        if "time" not in data and time_created is None:
+            logger.warning("No time on doc")
+            return
+
+        if "time" not in data:
+            created = rfc3339.rfc3339_to_timestamp(time_created)
+            timestr = time.strftime("%H%M%S", time.gmtime(created))
+            params["time"] = timestr
+        elif isinstance(data["time"], dict):
+            timestr = "{hour:02d}{minute:02d}{second:02d}"
+            params["time"] = timestr.format(**data["time"])
+        else:
+            params["time"] = data["time"].replace(":", "")
 
     def _post_to_track(self, params):
         qs = urlencode(params, True)
