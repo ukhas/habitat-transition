@@ -99,7 +99,6 @@ class SpaceNearUs:
             "alt": 0,
             "time": "00:00:00",
         }
-        # TODO
 
         fields = {
             "vehicle": "payload",
@@ -183,21 +182,10 @@ class SpaceNearUs:
             "speed": "speed"
         }
 
-        if "data" not in doc:
-            return
-
         data = doc["data"]
-
-        if "callsign" not in data:
-            return
-
         callsign = data["callsign"]
 
-        if "chase" not in callsign.lower():
-            return
-
-        if not isinstance(data, dict):
-            logger.warning("ignoring doc where data is not a dict")
+        if not data.get("chase", False):
             return
 
         params = {}
