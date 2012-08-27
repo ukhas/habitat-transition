@@ -65,7 +65,7 @@ class SpaceNearUs:
         update_seq = self.db.info()["update_seq"]
 
         consumer = immortal_changes.Consumer(self.db)
-        consumer.wait(self.couch_callback, filter="habitat/spacenear",
+        consumer.wait(self.couch_callback, filter="spacenearus/spacenear",
                       since=update_seq, heartbeat=1000, include_docs=True)
 
     def couch_callback(self, result):

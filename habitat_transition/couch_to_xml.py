@@ -83,7 +83,7 @@ class PayloadsXML(object):
         p = subprocess.Popen(("tidy", "-xml", "-indent", "-quiet"),
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         root = ET.ElementTree(self.tree)
-        root.write(p.stdin, encoding="utf-8"), xml_declaration=True)
+        root.write(p.stdin, encoding="utf-8", xml_declaration=True)
         p.stdin.close()
         data = p.stdout.read()
         p.wait()
