@@ -112,18 +112,10 @@ class SpaceNearUs:
             "seq": "sentence_id"
         }
 
-        if "data" not in doc:
-            logger.warning("ignoring doc due to no data")
-            return
-
         data = doc["data"]
 
-        if not isinstance(data, dict):
-            logger.warning("ignoring doc where data is not a dict")
-            return
-
         if "_fix_invalid" in data and data["_fix_invalid"]:
-            logger.warning("not uploading - _fix_invalid")
+            logger.info("not uploading - _fix_invalid")
             return
 
         with self.recent_lock:
