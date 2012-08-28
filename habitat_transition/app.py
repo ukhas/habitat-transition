@@ -70,8 +70,8 @@ def hello():
     <p><input type="submit" value="GO">
     </form>
 
-    <form action="listener_info" method="POST">
-    <h3>listener_info</h3>
+    <form action="listener_information" method="POST">
+    <h3>listener_information</h3>
     <p>Callsign: <input type="text" name="callsign"></p>
     <p>Data (json): <input type="text" name="data" value="{}"></p>
     <p>Time created (int, POSIX): <input type="text" name="time_created"></p>
@@ -121,8 +121,8 @@ def payload_telemetry():
 
     return "OK"
 
-@app.route("/listener_info", methods=["POST"])
-def listener_info():
+@app.route("/listener_information", methods=["POST"])
+def listener_information():
     callsign = flask.request.form["callsign"]
     data = json.loads(flask.request.form["data"])
     time_created = get_time_created()
@@ -131,7 +131,7 @@ def listener_info():
     assert isinstance(data, dict)
 
     u = uploader.Uploader(callsign=callsign, **couch_settings)
-    u.listener_info(data, time_created)
+    u.listener_information(data, time_created)
 
     return "OK"
 
@@ -176,7 +176,7 @@ HTML_DESCRIPTION = """
 
 def listener_map(callsign, data):
     try:
-        info = data["info"]["data"]
+        info = data["information"]["data"]
         telemetry = data["telemetry"]["data"]
 
         tdiff = int(time.time()) - data["latest"]
@@ -210,8 +210,9 @@ def receivers_load(couch_db):
     startkey = [yesterday, None]
     o = {"startkey": startkey}
 
-    for doc_type in ["info", "telemetry"]:
-        view = couch_db.view("habitat/listener_" + doc_type, **o)
+    for doc_type in ["information", "telemetry"]:
+        view_name = "listener_{0}/time_created_callsign".format(doc_type)
+        view = couch_db.view(view_name, **o)
 
         for result in view:
             (time_uploaded, callsign) = result["key"]
@@ -229,10 +230,10 @@ def receivers_load(couch_db):
         l = listeners[callsign]
 
         if not callsign or "chase" in callsign \
-                or "info" not in l or "telemetry" not in l:
+                or "information" not in l or "telemetry" not in l:
             remove_listeners.append(callsign)
         else:
-            required_ids[listeners[callsign]["info"]] = callsign
+            required_ids[listeners[callsign]["information"]] = callsign
             required_ids[listeners[callsign]["telemetry"]] = callsign
 
     for callsign in remove_listeners:
@@ -245,8 +246,8 @@ def receivers_load(couch_db):
         doc = result["doc"]
 
         callsign = required_ids[doc_id]
-        if doc["type"] == "listener_info":
-            listeners[callsign]["info"] = doc
+        if doc["type"] == "listener_information":
+            listeners[callsign]["information"] = doc
         elif doc["type"] == "listener_telemetry":
             listeners[callsign]["telemetry"] = doc
         else:

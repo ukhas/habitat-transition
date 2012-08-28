@@ -15,7 +15,6 @@ $habitat_url = "http://habitat.habhub.org/transition/%s";
 function habitat($identity, $string)
 {
     $string = trim($string);
-    $t = substr($string, 0, 3);
 
     switch (substr($string, 0, 3))
     {
@@ -57,23 +56,15 @@ function habitat_zz($string)
     $info_data = array(
         "radio" => (string) $parts[5],
         "antenna" => (string) $parts[6],
-        "dl-fldigi" => array(
-            "version" => (string) $parts[7],
-            "payload" => (string) $parts[8]
-        )
+        "dl_fldigi" => (string) $parts[7]
     );
-
-    $datetime_parts = explode(" ", $parts[2]);
-    $time_parts = habitat_split_time_string($datetime_parts[1]);
 
     $telemetry_data = array(
-        "time" => $time_parts,
         "latitude" => (double) $parts[3],
-        "longitude" => (double) $parts[4],
-        "altitude" => 0
+        "longitude" => (double) $parts[4]
     );
 
-    habitat_listener_info($callsign, $info_data);
+    habitat_listener_information($callsign, $info_data);
     habitat_listener_telemetry($callsign, $telemetry_data);
 }
 
@@ -88,10 +79,10 @@ function habitat_zc($string)
         return false;
 
     $data = array(
-        "time" => habitat_split_time_posix(time()),
         "latitude" => (double) $parts[2],
         "longitude" => (double) $parts[3],
-        "altitude" => (int) $parts[4]
+        "altitude" => (int) $parts[4],
+        "chase" => true
     );
 
     habitat_listener_telemetry($callsign, $data);
@@ -101,25 +92,6 @@ function habitat_callsign($callsign)
 {
     /* If restrictions are added, this function might be required */
     return (string) $callsign;
-}
-
-function habitat_split_time_string($time_string)
-{
-    $time_parts = explode(":", $time_string);
-    return array(
-        "hour" => (int) $time_parts[0],
-        "minute" => (int) $time_parts[1],
-        "second" => (int) $time_parts[2]
-    );
-}
-
-function habitat_split_time_posix($time)
-{
-    return array(
-        "hour" => idate("H", $time),
-        "minute" => idate("i", $time),
-        "second" => idate("s", $time)
-    );
 }
 
 function habitat_payload_telemetry($callsign, $string, $metadata)
@@ -135,7 +107,7 @@ function habitat_payload_telemetry($callsign, $string, $metadata)
     habitat_flask("payload_telemetry", $post_data);
 }
 
-function habitat_listener_info($callsign, $data)
+function habitat_listener_information($callsign, $data)
 {
     $json = new Services_JSON();
 
@@ -143,7 +115,7 @@ function habitat_listener_info($callsign, $data)
         "callsign" => $callsign,
         "data" => $json->encode($data)
     );
-    habitat_flask("listener_info", $post_data);
+    habitat_flask("listener_information", $post_data);
 }
 
 function habitat_listener_telemetry($callsign, $data)

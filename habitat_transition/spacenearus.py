@@ -65,7 +65,7 @@ class SpaceNearUs:
         update_seq = self.db.info()["update_seq"]
 
         consumer = immortal_changes.Consumer(self.db)
-        consumer.wait(self.couch_callback, filter="habitat/spacenear",
+        consumer.wait(self.couch_callback, filter="spacenearus/spacenear",
                       since=update_seq, heartbeat=1000, include_docs=True)
 
     def couch_callback(self, result):
@@ -87,29 +87,35 @@ class SpaceNearUs:
         logger.debug("Queue length now: " + str(self.upload_queue.qsize()))
 
     def payload_telemetry(self, doc):
+        required = {
+            # lat/lon are required. It's got to be somewhere, why not bermuda?
+
+            # seriously though: The only payloads that don't have lat/lon are
+            # OSIRIS and PETUNIA. There's an exception in spacenear.us to make
+            # the icons invisible and these coordinates ^ keep them out of the
+            # way (won't accidentally be clicked on, etc).
+            "lat": 32.3,
+            "lon": -64.8,
+            "alt": 0,
+            "time": "00:00:00",
+        }
+
         fields = {
             "vehicle": "payload",
             "lat": "latitude",
             "lon": "longitude",
             "alt": "altitude",
+            "time": "time",
             "heading": "heading",
             "speed": "speed",
             "temp_inside": "temperature_internal",
             "seq": "sentence_id"
         }
 
-        if "data" not in doc:
-            logger.warning("ignoring doc due to no data")
-            return
-
         data = doc["data"]
 
-        if not isinstance(data, dict):
-            logger.warning("ignoring doc where data is not a dict")
-            return
-
-        if "gps_lock" in data and not data["gps_lock"]:
-            logger.warning("not uploading due to data[\"gps_lock\"]")
+        if "_fix_invalid" in data and data["_fix_invalid"]:
+            logger.info("not uploading - _fix_invalid")
             return
 
         with self.recent_lock:
@@ -133,10 +139,11 @@ class SpaceNearUs:
                 self.recent_doc_receivers[doc_id] = doc["receivers"].keys()
                 new_receivers = doc["receivers"].keys()
 
-        params = {}
+        params = copy.deepcopy(required)
 
         self._copy_fields(fields, data, params)
-        self._handle_time(data, params)
+        # format of time is HH:MM:SS, checked by validation
+        params["time"] = params["time"].replace(":", "")
 
         unused_data = {}
         used_keys = set(fields.values() + ["time"])
@@ -167,27 +174,22 @@ class SpaceNearUs:
             "speed": "speed"
         }
 
-        if "data" not in doc:
-            return
-
         data = doc["data"]
 
-        if "callsign" not in data:
+        if not data.get("chase", False):
             return
 
-        callsign = data["callsign"]
-
-        if "chase" not in callsign.lower():
-            return
-
-        if not isinstance(data, dict):
-            logger.warning("ignoring doc where data is not a dict")
-            return
+        if "chase" not in data["callsign"] and "car" not in data["callsign"]:
+            data["callsign"] += "_chase"
+            # gives it the car icon.
 
         params = {}
 
         self._copy_fields(fields, data, params)
-        self._handle_time(data, params, doc["time_created"])
+
+        created = rfc3339.rfc3339_to_timestamp(doc["time_created"])
+        timestr = time.strftime("%H%M%S", time.gmtime(created))
+        params["time"] = timestr
 
         params["pass"] = "aurora"
         self.upload_queue.put(params)
@@ -218,21 +220,6 @@ class SpaceNearUs:
                 params[tgt] = data[src]
             except KeyError:
                 continue
-
-    def _handle_time(self, data, params, time_created=None):
-        if "time" not in data and time_created is None:
-            logger.warning("No time on doc")
-            return
-
-        if "time" not in data:
-            created = rfc3339.rfc3339_to_timestamp(time_created)
-            timestr = time.strftime("%H%M%S", time.gmtime(created))
-            params["time"] = timestr
-        elif isinstance(data["time"], dict):
-            timestr = "{hour:02d}{minute:02d}{second:02d}"
-            params["time"] = timestr.format(**data["time"])
-        else:
-            params["time"] = data["time"].replace(":", "")
 
     def _post_to_track(self, params):
         qs = urlencode(params, True)
