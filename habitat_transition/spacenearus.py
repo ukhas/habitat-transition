@@ -183,10 +183,13 @@ class SpaceNearUs:
         }
 
         data = doc["data"]
-        callsign = data["callsign"]
 
         if not data.get("chase", False):
             return
+
+        if "chase" not in data["callsign"] and "car" not in data["callsign"]:
+            data["callsign"] += "_chase"
+            # gives it the car icon.
 
         params = {}
 
