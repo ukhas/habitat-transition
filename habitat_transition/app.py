@@ -38,6 +38,8 @@ app = flask.Flask("habitat_transition.app")
 cache = Cache(threshold=10, default_timeout=60)
 
 # Load config here :S ?
+# N.B.: Searches working directory since it won't be specified in argv.
+# Configure uwsgi appropriately.
 config = load_config()
 couch_settings = {"couch_uri": config["couch_uri"],
                   "couch_db": config["couch_db"]}
