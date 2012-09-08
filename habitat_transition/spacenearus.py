@@ -29,10 +29,12 @@ import Queue
 import copy
 import json
 import time
+import statsd
 from habitat.utils import rfc3339, immortal_changes
 
 __all__ = ["SpaceNearUs"]
 logger = logging.getLogger("habitat_transition.spacenearus")
+statsd.init_statsd({'STATSD_BUCKET_PREFIX': 'habitat.spacenearus'})
 
 class SpaceNearUs:
     """
@@ -163,6 +165,7 @@ class SpaceNearUs:
             p["callsign"] = callsign
             self.upload_queue.put(p)
 
+        statsd.increment("good_uploads", len(new_receivers))
         return len(new_receivers)
 
     def listener_telemetry(self, doc):
