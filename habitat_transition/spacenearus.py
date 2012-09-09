@@ -30,11 +30,26 @@ import copy
 import json
 import time
 import statsd
+from couch_named_python import version
 from habitat.utils import rfc3339, immortal_changes
 
 __all__ = ["SpaceNearUs"]
 logger = logging.getLogger("habitat_transition.spacenearus")
 statsd.init_statsd({'STATSD_BUCKET_PREFIX': 'habitat.spacenearus'})
+
+
+@version(1)
+def spacenear_filter(doc, req):
+    """Select parsed payload_telemetry and all listener_telemetry documents."""
+    if 'type' not in doc:
+        return False
+    if doc['type'] == "listener_telemetry":
+        return True
+    if doc['type'] == "payload_telemetry":
+        if 'data' in doc and '_parsed' in doc['data']:
+            return True
+    return False
+
 
 class SpaceNearUs:
     """
