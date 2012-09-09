@@ -1,0 +1,3 @@
+spacenearus:
+    filters:
+        spacenear: habitat_transition.spacenearus.spacenear_filter
