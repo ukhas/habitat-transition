@@ -168,7 +168,7 @@ def set_expires(response, diff):
 
     response.headers["Expires"] = expires
 
-HTML_DESCRIPTION = """
+HTML_DESCRIPTION = u"""
 <font size="-2"><BR>
 <B>Radio: </B>{radio_safe}<BR>
 <B>Antenna: </B>{antenna_safe}<BR>
