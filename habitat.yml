@@ -1,6 +1,11 @@
 couch_uri: "http://localhost:5984"
 couch_db: habitat
-log_stderr_level: DEBUG
-log_file_level: NONE
+log_levels:
+    stderr: NONE
+    file: NONE
+    email: NONE
 spacenearus:
+    log_file:
     tracker: "http://habhub.org/tracker/track.php?{0}"
+transition_app:
+    log_file:
