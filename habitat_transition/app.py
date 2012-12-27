@@ -29,7 +29,7 @@ from werkzeug.contrib.cache import SimpleCache as Cache
 from xml.sax.saxutils import escape as htmlescape
 from habitat import uploader
 from . import couch_to_xml
-from habitat.utils.startup import load_config
+from habitat.utils.startup import load_config, setup_logging
 
 # Monkey patch float precision
 json.encoder.FLOAT_REPR = lambda o: format(o, '.5f')
@@ -41,6 +41,7 @@ cache = Cache(threshold=10, default_timeout=60)
 # N.B.: Searches working directory since it won't be specified in argv.
 # Configure uwsgi appropriately.
 config = load_config()
+setup_logging(config, "transition_app")
 couch_settings = {"couch_uri": config["couch_uri"],
                   "couch_db": config["couch_db"]}
 
