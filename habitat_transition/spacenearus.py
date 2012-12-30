@@ -201,6 +201,10 @@ class SpaceNearUs:
             data["callsign"] += "_chase"
             # gives it the car icon.
 
+        if "speed" in data:
+            # speed is m/s, spacenearus wants km/h
+            data["speed"] = data["speed"] * 3.6
+
         params = {}
 
         self._copy_fields(fields, data, params)
