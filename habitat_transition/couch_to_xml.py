@@ -65,7 +65,7 @@ def get_payloads(couch_uri, couch_db):
         doc = result["doc"]
 
         # need to include_docs to get transmission.
-        if not doc["transmissions"]:
+        if not doc.get("transmissions", []):
             continue
 
         payloads[callsign] = [doc["transmissions"], sentence]
