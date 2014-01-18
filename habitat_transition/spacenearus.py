@@ -21,6 +21,7 @@ A daemon that uploads parsed telemetry data to the spacenear.us tracker
 
 from urllib import urlencode
 from urllib2 import urlopen
+import requests
 import logging
 import couchdbkit
 import traceback
@@ -245,8 +246,13 @@ class SpaceNearUs:
 
     def _post_to_track(self, params):
         qs = urlencode(params, True)
+        url = self.tracker.format(qs)
         logger.debug("encoded data: " + qs)
-        u = urlopen(self.tracker.format(qs))
+        logger.debug("posting to URL: " + url)
+        try:
+            r = requests.get(url)
+        except requests.exceptions.HTTPError:
+            logger.exception("exception whilst opening %s", url)
 
     def _all_floats_to_str(self, obj):
         if isinstance(obj, dict) or isinstance(obj, list):
