@@ -120,7 +120,10 @@ def payload_telemetry():
     assert isinstance(metadata, dict)
 
     u = uploader.Uploader(callsign=callsign, **couch_settings)
-    u.payload_telemetry(string, metadata, time_created)
+    try:
+        u.payload_telemetry(string, metadata, time_created)
+    except uploader.UnmergeableError:
+        app.logger.warning("Unmergeable: %s (%r)", callsign, string)
 
     return "OK"
 
