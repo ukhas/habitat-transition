@@ -113,7 +113,10 @@ def payload_telemetry():
 
     if string_type == "base64":
         string = base64.b64decode(string)
-    elif string_type == "ascii-stripped":
+    elif string_type == "ascii" or string_type == "ascii-stripped":
+        string = string.encode("utf8")
+
+    if string_type == "ascii-stripped":
         string += "\n"
 
     assert callsign and string
