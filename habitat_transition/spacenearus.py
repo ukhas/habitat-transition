@@ -126,7 +126,6 @@ class SpaceNearUs:
             "time": "time",
             "heading": "heading",
             "speed": "speed",
-            "temp_inside": "temperature_internal",
             "seq": "sentence_id"
         }
 
