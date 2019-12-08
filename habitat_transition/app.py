@@ -207,6 +207,7 @@ def listener_map(callsign, data):
             "lat": telemetry["latitude"],
             "lon": telemetry["longitude"],
             "alt": telemetry["altitude"],
+            "tdiff_hours": tdiff_hours,
             "description": HTML_DESCRIPTION.format(**info)
         }
     except KeyError:
